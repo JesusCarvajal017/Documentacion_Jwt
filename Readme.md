@@ -1,0 +1,144 @@
+# JWT C#
+
+
+
+1. Configuracion servicio de autentificación
+Es importante mencionar que esto va en el program, pero si se dan cuenta, no utilizo el builder. Ya que eso hace parte de una extencion del services por medio de la interfaz **IServiceCollection**
+
+>[!IMPORTANT]
+> En en achivo appsettings.json lo siguiente:
+
+```
+    "JWT": {
+        "Key": "78D24960-EA07-4469-96FC-9C5B8692290C"
+    }
+
+```
+
+---
+
+ ```
+
+    services.AddAuthentication().AddJwtBearer(opciones =>
+    {
+
+        // para evitar que los nombre de los claim los cambie .Net
+        opciones.MapInboundClaims = false;
+
+        // parametros para saber cuando es un token valido
+        opciones.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            // fecha de vencimiento de esta forma se validara la validez
+            ValidateLifetime = true,
+
+            //llave primaria, validacion
+            ValidateIssuerSigningKey = true,
+
+            // llave primaria, configuración
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuracion["JWT:Key"])),
+
+            // para no tener problemas con la hora y fecha de nuestro token
+            ClockSkew = TimeSpan.Zero
+        };
+        }
+    );
+
+    return services;
+ ```
+
+2. Configurar los dtos, data y negocio del validador de credenciales
+
+- primero crear el dto que vamos a utilizar para recibir las crendenciales:
+
+    ``` 
+        // dtio de credenciales
+         public class CredencialesDto
+            {
+                public string Email { get; set; } = string.Empty;
+                public string Password { get; set; } = string.Empty;
+            }
+
+        // dto para la respuesta
+         public class AuthDto
+        {
+            public string Token { get; set; }
+            public DateTime Expiracion { get; set; }
+        }
+
+    ```
+
+3. Creacion del utilidad : construccion del token, según la data
+Este token solo es generado cuando las credenciales son correctas
+
+>[!IMPORTANT]
+>La validacion de credenciales deben ser desarrolada por los encargados de la data, de esa forma se podra utilizar esta funcionalidad de forma correcta
+
+```
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Entity.Dtos.Auth;
+using Entity.Model;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+
+namespace Utilities.Jwt
+{
+    public class GenerateTokenJwt
+    {
+        private IConfiguration _configuration;
+
+        public GenerateTokenJwt(IConfiguration configuration) { 
+            _configuration = configuration;
+        }
+
+        public async Task<AuthDto> GeneradorToken(User data)
+        {
+
+            // configuracion de los claims
+            // la idea es solo mandar el id, por cuestiones de seguidad
+            var claims = new List<Claim>
+            {
+                new Claim("id", data.Id.ToString()),
+            };
+
+
+            // firma del token
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:key"]!));
+            
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+
+            // expiración del token
+            var expiracion = DateTime.UtcNow.AddHours(1);
+
+            // Parametros de creacion de token
+            var tokenSeguridad = new JwtSecurityToken(issuer: null, audience: null, claims: claims, expires: expiracion, signingCredentials: creds);
+
+            var token = new JwtSecurityTokenHandler().WriteToken(tokenSeguridad);
+
+            // retorna el token, y fecha de expiración
+            return new AuthDto
+            {
+                Token = token,
+                Expiracion = expiracion
+            };
+        } 
+
+        }   
+    }
+
+```
+
+# AUTH
+
+1. Creacion de metodo de valiacion de credenciales
+Una buena practica es encriptar la contraseña del usuario y guardarla en el campo correpondiente del usuario
+
+```
+    
+
+
+```

@@ -135,10 +135,45 @@ namespace Utilities.Jwt
 # AUTH
 
 1. Creacion de metodo de valiacion de credenciales
-Una buena practica es encriptar la contraseña del usuario y guardarla en el campo correpondiente del usuario
+Una buena practica es encriptar la contraseña del usuario y guardarla en el campo correpondiente del usuarioh
+de esta forma siempre estar en la db el hash de la contraseña
 
 ```
-    
 
+    public class AuthData : Auth
+    {
+        private AplicationDbContext _contenxt;
+        private ILogger<AuthData> _logger;
+        private readonly GenerateTokenJwt _jwt;
+
+        public AuthData(AplicationDbContext context, ILogger<AuthData> logger, GenerateTokenJwt jwt) 
+        {
+            _contenxt = context;
+            _logger = logger;
+            _jwt = jwt;
+        }
+
+        public async Task<AuthDto> ValidarLoginAsync(CredencialesDto credenciales) 
+        {
+            //busqueda del usuario por email, de ese modo se busca en la db
+            var user = await _contenxt.Set<User>()
+                .FirstOrDefaultAsync(u => u.Email == credenciales.Email);
+            
+
+            // validacio
+            if (user != null && BCrypt.Net.BCrypt.Verify(credenciales.Password, user.Password))
+            {
+                var token = await _jwt.GeneradorToken(user);
+                return token;
+            }
+
+            return null;
+        }
+
+
+    }
 
 ```
+
+>[!IMPORTANT]
+> Este es un metodo de comprobacion de credenciales a la base de datos, utilizando el utitiles de jwt generador de token, cuando las credenciales sean correctas

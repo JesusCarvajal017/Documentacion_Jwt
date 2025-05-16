@@ -177,3 +177,79 @@ de esta forma siempre estar en la db el hash de la contraseña
 
 >[!IMPORTANT]
 > Este es un metodo de comprobacion de credenciales a la base de datos, utilizando el utitiles de jwt generador de token, cuando las credenciales sean correctas
+
+
+
+## Implementacion de este servicio
+Con esto creado ya solo queda exponerlo en un controlador y proteger las rutas como el siguiente ejemplo: 
+
+```
+
+     [Route("api/[controller]")]
+    [ApiController]
+    [Authorize] // CON ESTO ASEGURAMOS LA RUTA
+    [Produces("application/json")]
+    public class UserController : ControllerBase
+    {
+        private readonly UserBusiness _UserBusiness;
+        private readonly ILogger<UserController> _logger;
+
+        /// Constructor del controlador de permisos
+        public UserController(UserBusiness UserBusiness, ILogger<UserController> logger)
+        {
+            _UserBusiness = UserBusiness;
+            _logger = logger;
+        }
+    }
+```
+
+>[!WARNING]
+> Por logica de negocio, se deja publico el logeo
+
+
+> [!TIP]
+> Para poder ver esto en swagger se tiene que configurar la interfaz
+
+
+> Aqui se configura con el extends de programa para dejar limpio el program
+```
+     public static IServiceCollection AddViewAuthApi(this IServiceCollection services)
+    {
+        services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "Tu API", Version = "v1" });
+
+            var jwtSecurityScheme = new OpenApiSecurityScheme
+            {
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.Http,
+                Description = "Ingresa el token JWT como: Bearer {tu token}",
+
+                Reference = new OpenApiReference
+                {
+                    Id = JwtBearerDefaults.AuthenticationScheme,
+                    Type = ReferenceType.SecurityScheme
+                }
+            };
+
+            c.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
+
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                { jwtSecurityScheme, Array.Empty<string>() }
+            });
+        });
+
+        return services;
+
+    }
+
+```
+
+### esto es el resultado de esta ultima configuración
+
+![Mi imagen local](./img/interfaz1.png)
+![Mi imagen local](./img/interfa2.png)

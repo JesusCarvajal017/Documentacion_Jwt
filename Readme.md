@@ -337,7 +337,7 @@ Con esto creado ya solo queda exponerlo en un controlador y proteger las rutas c
 
 ---
 
-## 🌐 Paso 3: Flujo de Autenticación con Google
+## Paso 3: Flujo de Autenticación con Google
 
 1. El frontend solicita iniciar sesión con Google usando la API de Google.
 2. Google responde con un `ID Token` (JWT).
